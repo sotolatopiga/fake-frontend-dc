@@ -27,7 +27,6 @@ if __name__ == "__main__":
     threading_func_wrapper(s.io_loop.start, delay=0.01)
     threading_func_wrapper(lambda: view(f"http://localhost:{BOKEH_PORT}"), 0.5)
 
-# len(docs[-1].get_model_by_name("glyphBuyPressure").data_source.data['index'])
 
 #%%
 sourceBuySell, sourceVolume = requestData()
