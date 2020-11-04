@@ -11,8 +11,9 @@ from flask import jsonify
 import json, pickle
 import time
 import requests
+from CONSTANTS import ENDPOINT_PORT
 
-url = 'http://localhost:5000/api/hose-indicators-outbound'
+url = f'http://localhost:{ENDPOINT_PORT}/api/hose-indicators-outbound'
 data = {"volumes": {}, "buySell": {}}
 DEBUG = True
 
@@ -36,7 +37,7 @@ def createPlot():
     p.line(x='index', y='buyPressure', source=sourceBuySell, color='green', name="glyphBuyPressure")
     p.line(x='index', y='sellPressure', source=sourceBuySell, color='red', name="glyphSellPressure")
     def activation_function():
-        p._document.add_periodic_callback(lambda: update(p._document), 1000)
+        p._document.add_periodic_callback(lambda: update(p._document), 500)
         print("Document activated !")
     return p, activation_function
 

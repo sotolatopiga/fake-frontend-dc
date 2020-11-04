@@ -8,7 +8,7 @@ from plotBuySell import createPlot, requestData
 from bokeh.layouts import column
 
 
-BOKEH_PORT = 5010
+BOKEH_PORT = 5007
 if "docs" not in globals(): docs = []
 
 def attachDocToServer(doc : Document):
