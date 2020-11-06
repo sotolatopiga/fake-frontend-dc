@@ -1,8 +1,5 @@
-import pandas as pd
 from datetime import datetime
 from commonOld import tik, tok
-from bokeh.plotting import Figure, show, output_file
-from bokeh.models import ColumnDataSource, Range1d, CrosshairTool, WheelZoomTool, CustomJS, Div
 from bokeh.layouts import column, row, layout
 from pandas import DataFrame
 from os import listdir
@@ -10,15 +7,21 @@ from os.path import isfile, join
 from flask import jsonify
 import json, pickle
 import time
+import pandas as pd
+from bokeh.plotting import Figure, show, output_file
+from bokeh.models import ColumnDataSource, Range1d, CrosshairTool, WheelZoomTool, CustomJS, Div
 from collections import OrderedDict
 import requests
 from CONSTANTS import MARKET_TRADING_DATE, PS_PLOT_HEIGHT, PLOT_WIDTH, PS_ENDPOINT_PORT, OHLC_PLOT_HEIGHT
+from bokeh.models import  ColumnDataSource
+
 
 DEBUG = False
 CANDLE_WIDTH = 0.7
 ps_url = f'http://localhost:{PS_ENDPOINT_PORT}/ps-pressure-out'
 
 data = None
+output_file("/tmp/show.html")
 
 
 def  createDFfromOrderBook(psOrders, DATE=MARKET_TRADING_DATE):
@@ -66,24 +69,6 @@ def filterOutNonTradingTime(df, num=None):
     return res
 
 
-def createBuySellPlot(source):
-    pBuySell = Figure(width=PLOT_WIDTH, height=PS_PLOT_HEIGHT,tools="pan, reset,ywheel_zoom , box_zoom",
-                      name='pltBuySell')
-
-
-    wz = WheelZoomTool(dimensions="width"); pBuySell.add_tools(wz); pBuySell.toolbar.active_scroll = wz
-    pBuySell.toolbar.logo = None
-
-    pBuySell.line(x='index', y='buyPressure', source=source, color='green',
-                  legend_label="Tổng đặt mua", name="glyphSellPressure")
-    pBuySell.line(x='index', y='sellPressure', source=source, color='red',
-                  legend_label="Tổng đặt bán", name="glyphBuyPressure")
-    pBuySell.axis[0].visible = False
-    pBuySell.legend.location = "top_left"
-    pBuySell.legend.click_policy = "hide"
-    pBuySell.legend.background_fill_alpha = 0.0
-
-    return pBuySell
 
 
 def createColumnDataSource(ddf):
@@ -126,18 +111,40 @@ def requestPSData():
     global data
     res = requests.post(ps_url, json={})
     data = res.json() # ['ohlcDataDic', 'orders', 'psPressure']
-    num_datapoints = len(data['orders']['index'])
-    num_candles = len(data['ohlcDataDic']['open'])
-    #if DEBUG: print(num_candles, num_datapoints)
-    print(data.keys())
-    return data['orders'], data['ohlcDataDic'], data['psPressure']
+    #if DEBUG: print(len(data['ohlcDataDic']['open']), len(data['orders']['index']))
+    return data['orders'], ColumnDataSource(data['ohlcDataDic']), data['psPressure']
 
 
-from bokeh.models import  ColumnDataSource
-output_file("/tmp/show.html")
-orders, sourceDic, pressure = requestPSData()
-source = ColumnDataSource(sourceDic)
-p = plotPsTrimmed(source)
-show(p)
+def display_event(div, attributes=[], style='float:left;clear:left;font_size=13px'):
+    "Build a suitable CustomJS to display the current event in the div model."
+    return CustomJS(args=dict(div=div), code="""
+        var attrs = ['x', 'y']; 
+        var args = [];
+        const foo = x => {
 
+            return Math.floor(x) + ":" + Math.floor(parseFloat(x) * 60) % 60
+        }
+        args.push('Thời gian ' + '= ' + foo(Number(cb_obj['x']).toFixed(2)));
+        args.push('Giá ' + '= ' + Number(cb_obj['y']).toFixed(2));
+
+        var line = "<span style=float:left;clear:left;font_size=13px><b>"+ "</b>" + args.join(", ") + "</span>\\n";
+        var text = line;
+        var lines = text.split("\\n")
+        if (lines.length > 3)
+            lines.shift();
+        div.text = lines.join("\\n");
+    """)
+
+
+def hookupFigure(p, display_event=display_event):
+    from bokeh import events
+    div = Div(width=400, height=100, height_policy="fixed", name="divCustomJS")
+    p.js_on_event(events.LODStart, display_event(div))  # Start of LOD display
+    p.js_on_event(events.LODEnd, display_event(div))  # End of LOD display
+    ## Events with attributes
+    point_attributes = ['x', 'y']  # Point events
+    point_events = [events.MouseMove, ]
+    for event in point_events:
+        p.js_on_event(event, display_event(div, attributes=point_attributes))
+    return p, div
 

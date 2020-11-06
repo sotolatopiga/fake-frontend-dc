@@ -4,12 +4,12 @@ from bokeh.document.document import Document
 from bokeh.application.handlers import FunctionHandler
 from bokeh.application.application import  Application
 from commonOld import threading_func_wrapper
-from plotBuySell import createPlot, requestHoseData
+from plotBuySell import createPlot, requestHoseData, makeMasterPlot
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 
 
-BOKEH_PORT = 5007
+BOKEH_PORT = 5009
 if "docs" not in globals():
     docs = []
     page = column()
@@ -26,7 +26,7 @@ if "docs" not in globals():
 
 def attachDocToServer(doc : Document):
     global page, sourceVolume, sourceBuySell
-    page, activate, sourceBuySell,  sourceVolume = createPlot()
+    page, activate, sourceBuySell, sourceVolume = makeMasterPlot()
     doc.add_root(column(page))
     docs.append(doc)
     activate()
