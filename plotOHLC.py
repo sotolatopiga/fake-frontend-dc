@@ -1,12 +1,3 @@
-from datetime import datetime
-from commonOld import tik, tok
-from bokeh.layouts import column, row, layout
-from pandas import DataFrame
-from os import listdir
-from os.path import isfile, join
-from flask import jsonify
-import json, pickle
-import time
 import pandas as pd
 from bokeh.plotting import Figure, show, output_file
 from bokeh.models import ColumnDataSource, Range1d, CrosshairTool, WheelZoomTool, CustomJS, Div
@@ -15,13 +6,11 @@ import requests
 from CONSTANTS import MARKET_TRADING_DATE, PS_PLOT_HEIGHT, PLOT_WIDTH, PS_ENDPOINT_PORT, OHLC_PLOT_HEIGHT
 from bokeh.models import  ColumnDataSource
 
-
-DEBUG = False
-CANDLE_WIDTH = 0.7
-ps_url = f'http://localhost:{PS_ENDPOINT_PORT}/ps-pressure-out'
-
-data = None
-output_file("/tmp/show.html")
+if not "DEBUG" in globals():
+    DEBUG = False
+    CANDLE_WIDTH = 0.7
+    data = None
+    output_file("/tmp/show.html")
 
 
 def  createDFfromOrderBook(psOrders, DATE=MARKET_TRADING_DATE):
@@ -69,8 +58,6 @@ def filterOutNonTradingTime(df, num=None):
     return res
 
 
-
-
 def createColumnDataSource(ddf):
     dic = {key: ddf[key].values for key in ddf.columns}
     dic['index'] = list(map(lambda t: (t.hour * 3600 + t.minute * 60 + t.second) / 3600, ddf.index))
@@ -78,7 +65,7 @@ def createColumnDataSource(ddf):
     return source
 
 
-def plotPsTrimmed(source, OHLC_PLOT_HEIGHT=OHLC_PLOT_HEIGHT):          # Index is rather meaningless 'i'
+def createOhlcPlot(source, OHLC_PLOT_HEIGHT=OHLC_PLOT_HEIGHT):          # Index is rather meaningless 'i'
     from bokeh.plotting import figure
     p = figure(tools= "pan,box_zoom,reset,save",
                plot_width=PLOT_WIDTH,
@@ -105,14 +92,6 @@ def createOhlcSource(df):
         if df.open.values[i] > df.close.values[i]: redCandleAlpha[i] = 1
     df['redCandleAlpha'] = redCandleAlpha
     return createColumnDataSource(df)
-
-
-def requestPSData():
-    global data
-    res = requests.post(ps_url, json={})
-    data = res.json() # ['ohlcDataDic', 'orders', 'psPressure']
-    #if DEBUG: print(len(data['ohlcDataDic']['open']), len(data['orders']['index']))
-    return data['orders'], ColumnDataSource(data['ohlcDataDic']), data['psPressure']
 
 
 def display_event(div, attributes=[], style='float:left;clear:left;font_size=13px'):
