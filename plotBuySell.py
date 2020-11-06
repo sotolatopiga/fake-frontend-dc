@@ -1,26 +1,23 @@
 import pandas as pd, urllib
+from pandas import DataFrame
 from datetime import datetime
-from commonOld import tik, tok
 from bokeh.plotting import Figure, show, output_file
 from bokeh.events import ButtonClick
-from bokeh.models import ColumnDataSource, Range1d, CrosshairTool, WheelZoomTool, CustomJS, Div, Button
+from bokeh.models import ColumnDataSource, Range1d, CrosshairTool, WheelZoomTool
+from bokeh.models import Paragraph, CustomJS, Div, Button
 from bokeh.layouts import column, row, layout
 from bokeh.document.document import Document
-from plotOHLC import requestPSData, plotPsTrimmed, hookupFigure
-from pandas import DataFrame
-from os import listdir
-from os.path import isfile, join
-from flask import jsonify
-import json, pickle
-import time
+from plotOHLC import requestPSData, createOhlcPlot, hookupFigure
 import requests
 from CONSTANTS import HOSE_ENDPOINT_PORT, PLOT_WIDTH, PS_ENDPOINT_PORT, OHLC_PLOT_HEIGHT
-from CONSTANTS import BUYSELL_PLOT_HEIGHT, VOLUME_PLOT_HEIGHT, LIQUIDITY_ALPHA, SUU_URL
+from CONSTANTS import BUYSELL_PLOT_HEIGHT, VOLUME_PLOT_HEIGHT, LIQUIDITY_ALPHA, SUU_URL, DIV_TEXT_WIDTH
 
-hose_url = f'http://localhost:{HOSE_ENDPOINT_PORT}/api/hose-indicators-outbound'
-data = {"volumes": {}, "buySell": {}}
-DEBUG = True
-output_file("/tmp/foo_master_plots.html")
+if not "hose_url" in globals():
+    hose_url = f'http://localhost:{HOSE_ENDPOINT_PORT}/api/hose-indicators-outbound'
+    data = {"volumes": {}, "buySell": {}}
+    DEBUG = True
+    output_file("/tmp/foo_master_plots.html")
+
 
 def updateSource(sourceOld, sourceNew):
     #sourceOld.data = dict(sourceNew.data)
@@ -39,9 +36,9 @@ def updateSource(sourceOld, sourceNew):
         sourceOld.stream(stream)
 
 
-def createPlot():
+def createPlots():
+    ######################################## BS Pressure Plot ########################################
     sourceBuySell, sourceVolume = requestHoseData()
-    print(sourceBuySell)
     pBuySell = Figure(plot_width=PLOT_WIDTH, plot_height=BUYSELL_PLOT_HEIGHT, name="pltBuySell")
     pBuySell.xaxis.ticker = [8.75, 9, 9.5, 10, 10.5, 11, 11.5, 13, 13.5, 14, 14.5, 14.75]
     pBuySell.xaxis.major_label_overrides = {
@@ -52,7 +49,7 @@ def createPlot():
                   legend_label="Tổng đặt mua", name="glyphSellPressure")
     pBuySell.line(x='index', y='sellPressure', source=sourceBuySell, color='red',
                   legend_label="Tổng đặt bán", name="glyphBuyPressure")
-    wz = WheelZoomTool(dimensions="height"); pBuySell.add_tools(wz); pBuySell.toolbar.active_scroll = wz
+    wz = WheelZoomTool(dimensions="width"); pBuySell.add_tools(wz); pBuySell.toolbar.active_scroll = wz
     pBuySell.toolbar.logo = None
     pBuySell.axis[0].visible = False
     pBuySell.legend.location = "top_left"
@@ -79,15 +76,18 @@ def createPlot():
 
     ######################################### OHLC plot #########################################
     orders, source, pressure = requestPSData()
+    plotOhlc = createOhlcPlot(source)
+    pCandle, divCandle = hookupFigure(plotOhlc) # "divCustomJS" "pltOHLC" "glyphOHLCSegment"
+    pDebug = Paragraph(text=f"""["num_ps_orders": "{len(orders['index'])}"]\n"""
+                             """""",
+                       width=DIV_TEXT_WIDTH, height=100, name="pDebug")
 
-    pCandle, divCandle = hookupFigure(plotPsTrimmed(source)) # "divCustomJS" "pltOHLC" "glyphOHLCSegment"
-
+    ################################# Putting all plots together ################################
     def activation_function():
         pBuySell._document.add_periodic_callback(lambda: updateDoc(pBuySell._document), 500)
         print("Document activated !")
 
-    # page = row(column(pCandle, pBuySell, pVolume), divCandle)
-    return pCandle, pBuySell, pVolume, divCandle , activation_function, sourceBuySell, sourceVolume
+    return pCandle, pBuySell, pVolume, divCandle , activation_function, sourceBuySell, sourceVolume, pDebug
 
 
 def requestHoseData():
@@ -110,7 +110,7 @@ def fetchSuuData():
     return data
 
 
-def hookUpPlots(pCandle, pBuySell, pVolume, divCandle, divText, crosshairTool):
+def hookUpPlots(pCandle, pBuySell, pVolume, divCandle, divText, crosshairTool, pDebug):
     pCandle.x_range = pBuySell.x_range
     pVolume.x_range = pBuySell.x_range
     pCandle.add_tools(crosshairTool)
@@ -134,16 +134,18 @@ def hookUpPlots(pCandle, pBuySell, pVolume, divCandle, divText, crosshairTool):
         btnStart._document.get_model_by_name("btnStart").label = "Started!"
         btnStart.disabled = True
 
+    pLabel = Paragraph(text="Debug information (please ignore): ", width=pDebug.width, height=10, name="pLabel")
     btnStart = Button(label="Start automatic update", button_type="success", name="btnStart")
     btnStart.on_event(ButtonClick, btnStart_clicked)
-    return row(column(pCandle, pBuySell, pVolume), column(divCandle, btnStart, divText,)), activation_function
+    return row(column(pCandle, pBuySell, pVolume), column(divCandle, btnStart, divText, pLabel, pDebug)), \
+           activation_function
 
 
 def makeMasterPlot():
-    pCandle, pBuySell, pVolume, divCandle, activation_function, sourceBuySell, sourceVolume = createPlot()
-    divText = Div(text="Live info here...", width=400, height=500, height_policy="fixed", name="divText")
+    pCandle, pBuySell, pVolume, divCandle, activation_function, sourceBuySell, sourceVolume, pDebug = createPlots()
+    divText = Div(text="Live info here...", width=DIV_TEXT_WIDTH, height=500, height_policy="fixed", name="divText")
 
-    page, activate = hookUpPlots(pCandle, pBuySell, pVolume, divCandle, divText, CrosshairTool(dimensions="both"))
+    page, activate = hookUpPlots(pCandle, pBuySell, pVolume, divCandle, divText, CrosshairTool(dimensions="both"), pDebug)
     return page, activate, sourceBuySell, sourceVolume
 
 
@@ -167,7 +169,7 @@ def updateText(doc: Document, sourceBuySell, sourceVolume, psOrders, psDataSourc
 
     hoseUpdate = {key: sourceBuySell.data[key][n_old_buysell: n_recent_buysell] for key in sourceBuySell.data.keys()}
     currentSource.stream(hoseUpdate)
-    text += f"<br/><br/>Số data-points mới cho HOSE chưa được cập nhật: <br/>{numHoseUpdates - 1}<br/>"
+    text += f"<br/><br/>Số data-points mới cho HOSE chưa được cập nhật: <br/>{numHoseUpdates}<br/>"
 
     ############################################### Ps Candles ##############################################
     psSource: ColumnDataSource = doc.get_model_by_name("glyphOHLCSegment").data_source
@@ -221,14 +223,8 @@ def updateDoc(doc: Document):
     suuData = fetchSuuData()
     updateText(doc, sourceBuySell, sourceVolume, psOrders, psDataSource, psPressure, suuData = fetchSuuData())
 
-
-
-
-
-
-
-
-
+page, _, _, _ = makeMasterPlot()
+show(page)
 
 
 

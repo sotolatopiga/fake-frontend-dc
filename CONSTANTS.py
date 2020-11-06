@@ -9,4 +9,6 @@ OHLC_PLOT_HEIGHT = 530
 VOLUME_PLOT_HEIGHT = 130
 LIQUIDITY_ALPHA = 0.3
 
+DIV_TEXT_WIDTH = 400
+
 SUU_URL = "http://localhost:5010/suu-data-out"

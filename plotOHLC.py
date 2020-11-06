@@ -16,12 +16,13 @@ from CONSTANTS import MARKET_TRADING_DATE, PS_PLOT_HEIGHT, PLOT_WIDTH, PS_ENDPOI
 from bokeh.models import  ColumnDataSource
 
 
-DEBUG = False
-CANDLE_WIDTH = 0.7
-ps_url = f'http://localhost:{PS_ENDPOINT_PORT}/ps-pressure-out'
+if not "ps_url" in globals():
+    DEBUG = False
+    CANDLE_WIDTH = 0.7
+    ps_url = f'http://localhost:{PS_ENDPOINT_PORT}/ps-pressure-out'
 
-data = None
-output_file("/tmp/show.html")
+    data = None
+    output_file("/tmp/show.html")
 
 
 def  createDFfromOrderBook(psOrders, DATE=MARKET_TRADING_DATE):
@@ -69,8 +70,6 @@ def filterOutNonTradingTime(df, num=None):
     return res
 
 
-
-
 def createColumnDataSource(ddf):
     dic = {key: ddf[key].values for key in ddf.columns}
     dic['index'] = list(map(lambda t: (t.hour * 3600 + t.minute * 60 + t.second) / 3600, ddf.index))
@@ -78,7 +77,7 @@ def createColumnDataSource(ddf):
     return source
 
 
-def plotPsTrimmed(source, OHLC_PLOT_HEIGHT=OHLC_PLOT_HEIGHT):          # Index is rather meaningless 'i'
+def createOhlcPlot(source, OHLC_PLOT_HEIGHT=OHLC_PLOT_HEIGHT):          # Index is rather meaningless 'i'
     from bokeh.plotting import figure
     p = figure(tools= "pan,box_zoom,reset,save",
                plot_width=PLOT_WIDTH,
