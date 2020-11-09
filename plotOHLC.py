@@ -121,9 +121,9 @@ def display_event(div, attributes=[], style='float:left;clear:left;font_size=13p
         var args = [];
         const foo = x => {
 
-            return Math.floor(x) + ":" + Math.floor(parseFloat(x) * 60) % 60
+            return Math.floor(x) + ":" + Math.floor(parseFloat(x) * 60) % 60+ ":" + Math.floor(parseFloat(x) * 3600) % 60
         }
-        args.push('Thời gian ' + '= ' + foo(Number(cb_obj['x']).toFixed(2)));
+        args.push('Thời gian ' + '= ' + foo(Number(cb_obj['x'])));
         args.push('Giá ' + '= ' + Number(cb_obj['y']).toFixed(2));
 
         var line = "<span style=float:left;clear:left;font_size=13px><b>"+ "</b>" + args.join(", ") + "</span>\\n";

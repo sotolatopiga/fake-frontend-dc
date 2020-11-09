@@ -199,7 +199,6 @@ def updateText(doc: Document, sourceBuySell, sourceVolume, psOrders, psDataSourc
 
 def updateDoc(doc: Document):
     #if DEBUG: print(f"updated {doc}")
-    print("updated")
     sourceBuySell, sourceVolume = requestHoseData()
 
     ###################### Hose Buy, Sell #######################
@@ -220,13 +219,11 @@ def updateDoc(doc: Document):
     updateSource(sourcePs, psDataSource)
 
     ######################### Text Display #########################
-    suuData = fetchSuuData()
+    suuData = None
     updateText(doc, sourceBuySell, sourceVolume, psOrders, psDataSource, psPressure, suuData = fetchSuuData())
 
-page, _, _, _ = makeMasterPlot()
-show(page)
-
-
+# page, _, _, _ = makeMasterPlot()
+# show(page)
 
 
 
