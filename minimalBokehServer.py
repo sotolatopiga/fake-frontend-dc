@@ -4,7 +4,7 @@ from bokeh.document.document import Document
 from bokeh.application.handlers import FunctionHandler
 from bokeh.application.application import  Application
 from commonOld import threading_func_wrapper
-from plotBuySell import createPlots, requestHoseData, makeMasterPlot
+from plotBuySell import createPlots, requestHoseData, makeMasterPlot, fetchSuuData
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 
