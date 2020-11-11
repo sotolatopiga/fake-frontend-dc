@@ -8,7 +8,6 @@ from plotBuySell import createPlots, requestHoseData, makeMasterPlot, fetchSuuDa
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource
 
-
 BOKEH_PORT = 5009
 if "docs" not in globals():
     docs = []
