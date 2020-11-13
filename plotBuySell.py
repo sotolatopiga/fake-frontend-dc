@@ -153,7 +153,7 @@ def updateText(doc: Document, sourceBuySell, sourceVolume, psOrders, psDataSourc
     dt = doc.get_model_by_name("divText")
 
     text = f"Số lượng Hose data point đã scraped được: <br/> {len(sourceBuySell.data['buyPressure'])}<br/>"
-    text += f"Số order phái sinh đã match trong ngày: <br/>{len(psOrders)} <br/>"
+    text += f"Số order phái sinh đã match trong ngày: <br/>{len(psOrders['index'])} <br/>"
 
     text += f"Dư mua: {sourceBuySell.data['buyPressure'][-1]:.2f}  &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp"
     text += f"Dư bán: {sourceBuySell.data['sellPressure'][-1]:.2f} <br/>"
