@@ -149,6 +149,13 @@ def makeMasterPlot():
     return page, activate, sourceBuySell, sourceVolume
 
 
+def timeAgo(suuData):
+    from datetime import datetime
+    h, m, s = list(map(lambda x: int(x.split(' ')[-1].split('.')[0]), (suuData['python']['time']).split(':')))
+    n = datetime.now()
+    return n.hour*3600 + n.minute*60 + n.second - h*3600 - m*60 - s
+
+
 def updateText(doc: Document, sourceBuySell, sourceVolume, psOrders, psDataSource, psPressure, suuData):
     dt = doc.get_model_by_name("divText")
 
@@ -192,7 +199,8 @@ def updateText(doc: Document, sourceBuySell, sourceVolume, psOrders, psDataSourc
 
     ############################################### Suu ##############################################
     text += f"""<br/>foreignerBuyVolume: {suuData["foreignerBuyVolume"]}, &nbsp&nbsp  foreignerSellVolume {suuData["foreignerSellVolume"]}<br/> """
-    text += f"""totalBidVolume: {suuData["totalBidVolume"]}, &nbsp&nbsp  totalOfferVolume {suuData["totalOfferVolume"]}<br/> """
+    text += f"""totalBidVolume: {suuData["totalBidVolume"]}, &nbsp&nbsp  totalOfferVolume {suuData["totalOfferVolume"]}<br/><br/>"""
+    text += f"""Net BU-SD: {suuData['python']['Net BU-SD']} ({timeAgo(suuData)} s ago)"""
 
     dt.text = text
 
